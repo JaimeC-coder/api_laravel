@@ -22,18 +22,18 @@ class DatabaseSeeder extends Seeder
          ]);
 
          $this->call([
-            RoleSeeder::class,
-            PermissionSeeder::class,
-            CategorySeeder::class,
-            StaffSeeder::class,
-            UserSeeder::class,
-            UserRoleSeeder::class,
-            RolePermissionSeeder::class,
-            ProductSeeder::class,
-            UnitMeasurementSeeder::class,
-            ProductUnitPriceByMeasurementSeeder::class,
-            InventorySeeder::class,
-            #InventoryTransactionSeeder::class,
+            // RoleSeeder::class,
+            // PermissionSeeder::class,
+            // CategorySeeder::class,
+            // StaffSeeder::class,
+            // UserSeeder::class,
+            // UserRoleSeeder::class,
+            // RolePermissionSeeder::class,
+            // ProductSeeder::class,
+            // UnitMeasurementSeeder::class,
+            // ProductUnitPriceByMeasurementSeeder::class,
+            // InventorySeeder::class,
+            InventoryTransactionSeeder::class,
         ]);
 
 

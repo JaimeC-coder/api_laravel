@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Http\Resources\InventoryResource;
 use App\Http\Resources\InventoryTransactionResource;
 use App\Http\Resources\InventoryTransactionShowResource;
-use App\Http\Resources\ProductUnitPriceByMeasurementResource;
 use App\Http\Response\JsonResponse;
 use App\Models\Inventory;
 use App\Models\InventoryTransaction;
@@ -97,12 +96,16 @@ class InventoryController extends Controller
         //
     }
 
-    public function input()
+    public function input(Request $request)
     {
-
         try {
+            $take = $request->take? $request->take : 10;
+            $skip = $request->skip? $request->skip : 0;
+
             $input = InventoryTransaction::where('transactionType', 'input')->ORWhere('transactionType', 'purchase')
                 ->orderBy('created_at', 'desc')
+                ->skip($skip)
+                ->take($take)
                 ->get();
 
             $input = InventoryTransactionResource::collection($input);
@@ -114,11 +117,15 @@ class InventoryController extends Controller
             return JsonResponse::error([], 'Error' . $th->getMessage(), false, 0, 500);
         }
     }
-    public function ouput()
+    public function ouput(Request $request)
     {
         try {
+            $take = $request->take? $request->take : 10;
+            $skip = $request->skip? $request->skip : 0;
             $output = InventoryTransaction::where('transactionType', 'output')
                 ->orderBy('created_at', 'desc')
+                ->skip($skip)
+                ->take($take)
                 ->get();
             $output = InventoryTransactionResource::collection($output);
             return JsonResponse::success($output, 'Lista de transacciones de salida', true, 1, 200);

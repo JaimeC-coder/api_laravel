@@ -14,6 +14,6 @@ class InventoryTransactionSeeder extends Seeder
     public function run(): void
     {
         //
-        InventoryTransaction::factory(55000)->create();
+        InventoryTransaction::factory(500)->create();
     }
 }

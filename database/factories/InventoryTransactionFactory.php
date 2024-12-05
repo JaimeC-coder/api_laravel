@@ -31,7 +31,7 @@ class InventoryTransactionFactory extends Factory
             'transactionType' => $transactionType,
             'transactionClase' => $transactionClase,
             'transactionCount' => $this->faker->randomFloat(2, 1, 100),
-            'transactionDate' => $this->faker->dateTimeBetween('2010-01-01', '2023-12-31')->format('Y-m-d'),
+            'transactionDate' => $this->faker->dateTimeBetween('2024-01-01', '2024-11-30')->format('Y-m-d'),
 
         ];
     }
