@@ -15,11 +15,11 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-         Category::create([
-            'categoryName'=> 'Root',
-            'categoryDescription'=> 'Root Category',
-            'parentCategoryId' => null,
-         ]);
+        //  Category::create([
+        //     'categoryName'=> 'Root',
+        //     'categoryDescription'=> 'Root Category',
+        //     'parentCategoryId' => null,
+        //  ]);
 
          $this->call([
             // RoleSeeder::class,
