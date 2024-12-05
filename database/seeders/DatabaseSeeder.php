@@ -33,7 +33,7 @@ class DatabaseSeeder extends Seeder
             UnitMeasurementSeeder::class,
             ProductUnitPriceByMeasurementSeeder::class,
             InventorySeeder::class,
-            InventoryTransactionSeeder::class,
+            #InventoryTransactionSeeder::class,
         ]);
 
 
