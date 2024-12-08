@@ -31,16 +31,34 @@ Route::ApiResource('roles', RoleController::class);
 Route::ApiResource('permissions', PermissionController::class);
 //Route::ApiResource('users', UserController::class);
 
-Route::get('dashboard',[HomeController::class, 'index'])->name('dasboard');
-Route::get('dashboard1',[HomeController::class, 'dashboardFilter'])->name('dashboardFilter');
+Route::get('dashboard', [HomeController::class, 'index'])->name('dasboard');
+Route::get('dashboard1', [HomeController::class, 'dashboardFilter'])->name('dashboardFilter');
+
+Route::prefix('dashboard')->group(function () {
+
+
+
+
+    //*Metodo que debe de resivir el año para mostrar la informacion
+    Route::get('informationByTemporada', [HomeController::class, 'informationByTemporada']);
+    //*Metodo que debe de resivir el año
+    Route::get('informationByCategoryBYear', [HomeController::class, 'informationByCategoryBYear']);
+    //* Metodo que debe de resivir 2 años para comparar
+    Route::get('inputOuput', [HomeController::class, 'inputOuput']);
+    //* Metodo que debe de resivir el id del producto
+    Route::get('inputOuputXMes', [HomeController::class, 'inputOuputXMes']);
+
+    //!Filtros habilitados
+    Route::get('filterYear', [HomeController::class, 'filterYear']);
+    Route::get('filterProduct', [HomeController::class, 'filterProduct']);
+});
 
 Route::prefix('products')->group(function () {
     Route::ApiResource('product', ProductController::class);
     Route::patch('product/{product}/stock', [ProductController::class, 'updateStock']);
     Route::patch('product/{product}/price', [ProductUnitPriceByMeasurementController::class, 'updatePrice']);
     Route::get('product/{productById}/{productUnitPriceId}', [ProductController::class, 'productInformationAll']);
-    Route::delete('product/unitprice/{productById}/{productUnitPriceId}' , [ProductUnitPriceByMeasurementController::class, 'destroy']);
-
+    Route::delete('product/unitprice/{productById}/{productUnitPriceId}', [ProductUnitPriceByMeasurementController::class, 'destroy']);
 });
 Route::prefix('categories')->group(function () {
     Route::ApiResource('category', CategoryController::class);
@@ -54,8 +72,7 @@ Route::prefix('unitmeasures')->group(function () {
 });
 
 Route::prefix('inventories')->group(function () {
-   Route::apiResource('inventory', InventoryController::class);
+    Route::apiResource('inventory', InventoryController::class);
     Route::get('/inventory/transactions/input', [InventoryController::class, 'input']);
     Route::get('/inventory/transactions/ouput', [InventoryController::class, 'ouput']);
 });
-

@@ -6,198 +6,216 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Http\Response\JsonResponse;
 
+use function Illuminate\Log\log;
+
 class HomeController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
-    public function index()
+
+    //*Metodo que debe de resivir el año para mostrar la informacion
+    public function informationByCategoryBYear(Request $request)
     {
+        $year = $request->anio ? $request->anio : date('Y');
+        $categoriaMasVendida = DB::table('inventory_transactions')
+            ->join('product_unit_price_by_measurements', 'inventory_transactions.productUnitPriceId', '=', 'product_unit_price_by_measurements.productUnitPriceId')
+            ->join('products', 'product_unit_price_by_measurements.productId', '=', 'products.productId')
+            ->join('categories', 'products.categoryId', '=', 'categories.categoryId')
+            ->select('categories.categoryName', DB::raw('SUM(transactionCount) as cantidad'))
+            ->whereRaw('YEAR(transactionDate) = ' . $year)
+            ->groupBy('categories.categoryName')
+            ->orderBy('cantidad', 'desc')
+            ->first();
+        $categoriaMenosVendida = DB::table('inventory_transactions')
+            ->join('product_unit_price_by_measurements', 'inventory_transactions.productUnitPriceId', '=', 'product_unit_price_by_measurements.productUnitPriceId')
+            ->join('products', 'product_unit_price_by_measurements.productId', '=', 'products.productId')
+            ->join('categories', 'products.categoryId', '=', 'categories.categoryId')
+            ->select('categories.categoryName', DB::raw('SUM(transactionCount) as cantidad'))
+            ->whereRaw('YEAR(transactionDate) = ' . $year)
+            ->groupBy('categories.categoryName')
+            ->orderBy('cantidad', 'asc')
+            ->first();
+        $categoria = DB::table('categories')
+            ->leftJoin('products', 'categories.categoryId', '=', 'products.categoryId')
+            ->leftJoin('product_unit_price_by_measurements', 'products.productId', '=', 'product_unit_price_by_measurements.productId')
+            ->leftJoin('inventory_transactions', 'product_unit_price_by_measurements.productUnitPriceId', '=', 'inventory_transactions.productUnitPriceId')
+            ->select(
+                'categories.categoryName',
+                DB::raw('COALESCE(SUM(inventory_transactions.transactionCount), 0) as cantidad')
+            )
+            ->whereRaw('YEAR(transactionDate) = ' . $year)
+            ->groupBy('categories.categoryName')
+            ->get();
 
-        try {
+        $categoria = [
+            'categoriaMasVendida' => $categoriaMasVendida,
+            'categoriaMenosVendida' => $categoriaMenosVendida,
+            'categoria' => $categoria
+        ];
 
-            $entradasSalidas = DB::table('inventory_transactions')
+        return JsonResponse::success($categoria, 'informacion para Dashboard', true, 1, 200);
+    }
+    //*Metodo que debe de resivir el año
+    public function informationByTemporada(Request $request)
+    {
+        log($request);
+        $year = $request->anio ? $request->anio : date('Y');
+        $totalAnual = DB::table('inventory_transactions')
+            ->whereRaw('YEAR(transactionDate) = ' . $year)
+            ->sum('transactionCount');
+        //invierno
+        $invierno  = DB::table('inventory_transactions')
             ->select('transactionType', DB::raw('SUM(transactionCount) as cantidad'))
+            ->whereYear('transactionDate', $year)
+            ->whereIn(DB::raw('MONTH(transactionDate)'), [12, 1, 2])
             ->groupBy('transactionType')
             ->get();
-            //entradas y salidas de productos por mes
+        $totalInvierno = $invierno->sum('cantidad');
+        $porcentajeInvierno = $totalAnual > 0 ? ($totalInvierno / $totalAnual) * 100 : 0;
+        //verano
+        $verano = DB::table('inventory_transactions')
+            ->select('transactionType', DB::raw('SUM(transactionCount) as cantidad'))
+            ->whereRaw('YEAR(transactionDate) = ' . $year)
+            ->whereIn(DB::raw('MONTH(transactionDate)'), [3, 4, 5])
+            ->groupBy('transactionType')
+            ->get();
+        $totalVerano = $verano->sum('cantidad');
+        $porcentajeVerano = $totalAnual > 0 ? ($totalVerano / $totalAnual) * 100 : 0;
+
+        //otoño
+        $otono = DB::table('inventory_transactions')
+            ->select('transactionType', DB::raw('SUM(transactionCount) as cantidad'))
+            ->whereRaw('YEAR(transactionDate) = ' . $year)
+            ->whereIn(DB::raw('MONTH(transactionDate)'), [6, 7, 8])
+            ->groupBy('transactionType')
+            ->get();
+        $totalOtono = $otono->sum('cantidad');
+        $porcentajeOtono = $totalAnual > 0 ? ($totalOtono / $totalAnual) * 100 : 0;
+
+
+        //primavera
+        $primavera = DB::table('inventory_transactions')
+            ->select('transactionType', DB::raw('SUM(transactionCount) as cantidad'))
+            ->whereRaw('YEAR(transactionDate) = ' . $year)
+            ->whereIn(DB::raw('MONTH(transactionDate)'), [9, 10, 11])
+            ->groupBy('transactionType')
+            ->get();
+
+        $totalPrimavera = $primavera->sum('cantidad');
+        $porcentajePrimavera = $totalAnual > 0 ? ($totalPrimavera / $totalAnual) * 100 : 0;
+
+
+        $grafica = [
+            'invierno' => [
+                'transacciones' => $invierno,
+                'porcentaje' => round($porcentajeInvierno,2)
+            ],
+            'verano' => [
+                'transacciones' => $verano,
+                'porcentaje' => round($porcentajeVerano,2)
+            ],
+            'otono' => [
+                'transacciones' => $otono,
+                'porcentaje' => round($porcentajeOtono,2)
+            ],
+            'primavera' => [
+                'transacciones' => $primavera,
+                'porcentaje' => round($porcentajePrimavera,2)
+            ]
+        ];
+
+        return JsonResponse::success($grafica, 'informacion para Dashboard', true, 1, 200);
+    }
+
+    //* Metodo que debe de resivir 2 años para comparar
+    public function inputOuput(Request $request)
+    {
+        log($request);
+
+        $year1 = $request->anio1 ? $request->anio1 : date('Y');
+        $year2 = $request->anio2 ? $request->anio2 : date('Y');
+
+        if ($year1 == $year2) {
+            $entradasSalidas1 = DB::table('inventory_transactions')
+                ->select('transactionType', DB::raw('SUM(transactionCount) as cantidad'))
+                ->whereRaw('YEAR(transactionDate) = ' . $year1)
+                ->groupBy('transactionType')
+                ->get();
+            return JsonResponse::success($entradasSalidas1, 'Entradas y salidas de productos', true, 1, 200);
+        }
+        $entradasSalidas1 = DB::table('inventory_transactions')
+            ->select('transactionType', DB::raw('SUM(transactionCount) as cantidad'))
+            ->whereRaw('YEAR(transactionDate) = ' . $year1)
+            ->groupBy('transactionType')
+            ->get();
+        $entradasSalidas2 = DB::table('inventory_transactions')
+            ->select('transactionType', DB::raw('SUM(transactionCount) as cantidad'))
+            ->whereRaw('YEAR(transactionDate) = ' . $year2)
+            ->groupBy('transactionType')
+            ->get();
+
+        $entradasSalidas = [
+            'year1' => $entradasSalidas1,
+            'year2' => $entradasSalidas2
+        ];
+        return JsonResponse::success($entradasSalidas, 'Entradas y salidas de productos', true, 1, 200);
+    }
+
+    //* Metodo que debe de resivir el id del producto
+    //!aqui falta terminar el ingreso del id del producto
+    public function inputOuputXMes(Request $request)
+    {
+        log($request);
+        $year = $request->anio ? $request->anio : date('Y');
+        $productId = $request->product ? $request->product : 0;
+        if ($productId === 0) {
             $entradasSalidasXMes = DB::table('inventory_transactions')
                 ->select('transactionType', DB::raw('SUM(transactionCount) as cantidad'), DB::raw('MONTH(transactionDate) as mes'))
+                ->whereRaw('YEAR(transactionDate) = ' . $year)
                 ->groupBy('transactionType', 'mes')
-            ->get();
-            //entrada y salida de productos por temporada (invierno, verano, otoño, primavera)
-          //Cantidad de transacciones por mes
-                $grafica = [
-                'ventasXMes' => $this->countProductsXMonthByYear(),
-                'categoria' => $this->informationByCategoryBYear(),
-                'entradasSalidas' => $entradasSalidas,
-                'entradasSalidasXMes' => $entradasSalidasXMes,
-                'temporadas' => $this->informationByTemporada(),
-                'TransaccionesXMes' => $this->transactionXMesByYear()
-            ];
-
-            return JsonResponse::success($grafica, 'informacion para Dashboard', true, 1, 200);
-        } catch (\Throwable $th) {
-            log("----------Error Categoria Crear----------");
-            log($th->getMessage());
-            log("--------------------");
-            return JsonResponse::error([], 'Error' . $th->getMessage(), false, 0, 500);
+                ->get();
+            return JsonResponse::success($entradasSalidasXMes, 'Entradas y salidas de productos por mes', true, 1, 200);
         }
-    }
 
 
-    public function dashboardFilter(){
-        try{
-            //Lista de años en los que se han realizado transacciones
-            $years = DB::table('inventory_transactions')
-                ->select(DB::raw('YEAR(transactionDate) as year'))
-                ->groupBy('year')
-                ->get();
-            //return JsonResponse::success($years, 'Lista de años', true, 1, 200);
-            //Lista de meses en los que se han realizado transacciones
-            $months = DB::table('inventory_transactions')
-                ->select(DB::raw('MONTH(transactionDate) as month'))
-                ->groupBy('month')
-                ->get();
-            //return JsonResponse::success($months, 'Lista de meses', true, 1, 200);
-            $ventasXMes = DB::table('inventory_transactions')
-                ->join('product_unit_price_by_measurements', 'inventory_transactions.productUnitPriceId', '=', 'product_unit_price_by_measurements.productUnitPriceId')
-                ->join('products', 'product_unit_price_by_measurements.productId', '=', 'products.productId')
-                ->select(
-                    DB::raw('YEAR(transactionDate) as year'),
-                    DB::raw('MONTH(transactionDate) as mes'),
-                    DB::raw('SUM(transactionCount) as cantidad'),
-                    'inventory_transactions.transactionType',
-                    'products.productId',
-                    'products.productName'
-                )
-                ->groupBy('year', 'mes', 'products.productId', 'inventory_transactions.transactionType')
-                ->orderBy('year', 'asc')
-                ->get();
-            return JsonResponse::success($ventasXMes, 'Lista de transacciones de entrada', true, 1, 200);
-
-        }catch (\Throwable $th) {
-            log("----------Error Categoria Crear----------");
-            log($th->getMessage());
-            log("--------------------");
-            return JsonResponse::error([], 'Error' . $th->getMessage(), false, 0, 500);
-        }
-    }
-
-
-    public function countProductsXMonthByYear($year= null){
-
-          $year = $year ?? date('Y');
-         if($year == null){
-            $ventasXMes = DB::table('inventory_transactions')
-            ->select(DB::raw('MONTH(transactionDate) as mes'), DB::raw('SUM(transactionCount) as cantidad'))
-            ->where('transactionDate','=', $year)
-            ->groupBy('mes')
+        $entradasSalidasXMes = DB::table('inventory_transactions')
+            ->join('product_unit_price_by_measurements', 'inventory_transactions.productUnitPriceId', '=', 'product_unit_price_by_measurements.productUnitPriceId')
+            ->select(
+                'inventory_transactions.transactionType',
+                DB::raw('SUM(inventory_transactions.transactionCount) as cantidad'),
+                DB::raw('MONTH(inventory_transactions.transactionDate) as mes')
+            )
+            ->where('product_unit_price_by_measurements.productId', $productId) // Filtro por el ID del producto
+            ->whereRaw('YEAR(inventory_transactions.transactionDate) = ' . $year)
+            ->groupBy('inventory_transactions.transactionType', 'mes')
             ->get();
-         }else{
-            $ventasXMes = DB::table('inventory_transactions')
-            ->select(DB::raw('MONTH(transactionDate) as mes'), DB::raw('SUM(transactionCount) as cantidad'))
-            ->groupBy('mes')
+
+
+        return JsonResponse::success($entradasSalidasXMes, 'Entradas y salidas de productos por mes', true, 1, 200);
+    }
+
+
+
+    public function filterYear()
+    {
+        $years = DB::table('inventory_transactions')
+            ->select(DB::raw('YEAR(transactionDate) as year'))
+            ->groupBy('year')
+            ->orderBy('year', 'desc')
             ->get();
-         }
-
-        return $ventasXMes;
-
+        return JsonResponse::success($years, 'Lista de años', true, 1, 200);
     }
 
-    public function informationByCategoryBYear($year = null){
-            //categoria mas vendida
-            $categoriaMasVendida = DB::table('inventory_transactions')
-                ->join('product_unit_price_by_measurements', 'inventory_transactions.productUnitPriceId', '=', 'product_unit_price_by_measurements.productUnitPriceId')
-                ->join('products', 'product_unit_price_by_measurements.productId', '=', 'products.productId')
-                ->join('categories', 'products.categoryId', '=', 'categories.categoryId')
-                ->select('categories.categoryName', DB::raw('SUM(transactionCount) as cantidad'))
-                ->groupBy('categories.categoryName')
-                ->orderBy('cantidad', 'desc')
-                ->first();
-            //categoia menos vendida
-            $categoriaMenosVendida = DB::table('inventory_transactions')
-                ->join('product_unit_price_by_measurements', 'inventory_transactions.productUnitPriceId', '=', 'product_unit_price_by_measurements.productUnitPriceId')
-                ->join('products', 'product_unit_price_by_measurements.productId', '=', 'products.productId')
-                ->join('categories', 'products.categoryId', '=', 'categories.categoryId')
-                ->select('categories.categoryName', DB::raw('SUM(transactionCount) as cantidad'))
-                ->groupBy('categories.categoryName')
-                ->orderBy('cantidad', 'asc')
-                ->first();
+    public function filterProduct()
+    {
+        $products = DB::table('inventory_transactions')
+            ->join('product_unit_price_by_measurements', 'inventory_transactions.productUnitPriceId', '=', 'product_unit_price_by_measurements.productUnitPriceId')
+            ->join('products', 'product_unit_price_by_measurements.productId', '=', 'products.productId')
+            ->select('products.productId', 'products.productName')
+            ->distinct() // Asegura que no se repitan productos
+            ->get();
 
-            //cantidad de productos vendidas por categoria
-            $categoria = DB::table('categories')
-                ->leftJoin('products', 'categories.categoryId', '=', 'products.categoryId')
-                ->leftJoin('product_unit_price_by_measurements', 'products.productId', '=', 'product_unit_price_by_measurements.productId')
-                ->leftJoin('inventory_transactions', 'product_unit_price_by_measurements.productUnitPriceId', '=', 'inventory_transactions.productUnitPriceId')
-                ->select(
-                    'categories.categoryName',
-                    DB::raw('COALESCE(SUM(inventory_transactions.transactionCount), 0) as cantidad')
-                )
-                ->groupBy('categories.categoryName')
-                ->get();
-
-            return [
-                'categoriaMasVendida' => $categoriaMasVendida,
-                'categoriaMenosVendida' => $categoriaMenosVendida,
-                'categoria' => $categoria
-            ];
-
-
+        return JsonResponse::success($products, 'Lista de productos', true, 1, 200);
     }
-
-    public function informationByTemporada($year = null){
-        $year = $year ?? date('Y');
-         //invierno
-         $invierno = DB::table('inventory_transactions')
-         ->select('transactionType', DB::raw('SUM(transactionCount) as cantidad'))
-         ->whereMonth('transactionDate', '12')
-         ->orWhereMonth('transactionDate', '1')
-         ->orWhereMonth('transactionDate', '2')
-         ->groupBy('transactionType')
-         ->get();
-     //verano
-     $verano = DB::table('inventory_transactions')
-         ->select('transactionType', DB::raw('SUM(transactionCount) as cantidad'))
-         ->whereMonth('transactionDate', '3')
-         ->orWhereMonth('transactionDate', '4')
-         ->orWhereMonth('transactionDate', '5')
-         ->groupBy('transactionType')
-         ->get();
-     //otoño
-     $otono = DB::table('inventory_transactions')
-         ->select('transactionType', DB::raw('SUM(transactionCount) as cantidad'))
-         ->whereMonth('transactionDate', '6')
-         ->orWhereMonth('transactionDate', '7')
-         ->orWhereMonth('transactionDate', '8')
-         ->groupBy('transactionType')
-         ->get();
-
-     //primavera
-     $primavera = DB::table('inventory_transactions')
-         ->select('transactionType', DB::raw('SUM(transactionCount) as cantidad'))
-         ->whereMonth('transactionDate', '9')
-         ->orWhereMonth('transactionDate', '10')
-         ->orWhereMonth('transactionDate', '11')
-         ->groupBy('transactionType')
-         ->get();
-
-         return [
-             'invierno' => $invierno,
-             'verano' => $verano,
-             'otono' => $otono,
-             'primavera' => $primavera
-         ];
-
-
-    }
-
-    public function transactionXMesByYear($year = null){
-        $TransaccionesXMes = DB::table('inventory_transactions')
-        ->select(DB::raw('MONTH(transactionDate) as mes'), DB::raw('count(transactionCount) as cantidad'))
-        ->groupBy('mes')->get();
-
-        return $TransaccionesXMes;
-    }
-
 }

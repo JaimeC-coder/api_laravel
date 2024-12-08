@@ -99,16 +99,38 @@ class InventoryController extends Controller
     public function input(Request $request)
     {
         try {
-            $take = $request->take? $request->take : 10;
-            $skip = $request->skip? $request->skip : 0;
 
+            $consulta_extra = "";
+            $take = $request->pagesize? $request->pagesize : 10;
+            $skip = $request->skip? $request->skip : 0;
+            $star = $request->start;
+            $end = $request->end;
+
+            if($end && $star){
+                $consulta_extra = "AND transactionDate BETWEEN '$star' AND '$end'";
+            }else if($star){
+                $consulta_extra = "AND transactionDate >= '$star'";
+            }
             $input = InventoryTransaction::where('transactionType', 'input')->ORWhere('transactionType', 'purchase')
-                ->orderBy('created_at', 'desc')
-                ->skip($skip)
-                ->take($take)
-                ->get();
+            ->whereRaw("1=1 $consulta_extra")
+            ->orderBy('transactionDate', 'desc')
+            ->skip($skip)
+            ->take($take)
+            ->paginate($take);
 
             $input = InventoryTransactionResource::collection($input);
+            $paguinate = [
+                'total' => $input->total(),
+                'per_page' => $input->perPage(),
+                'current_page' => $input->currentPage(),
+                'last_page' => $input->lastPage(),
+                'next_page_url' => $input->nextPageUrl(),
+                'prev_page_url' => $input->previousPageUrl(),
+            ];
+            $input = [
+                'data' => $input,
+                'paguinate' => $paguinate
+            ];
             return JsonResponse::success($input, 'Lista de transacciones de entrada', true, 1, 200);
         } catch (\Throwable $th) {
             log("----------Error Categoria Crear----------");
@@ -120,14 +142,39 @@ class InventoryController extends Controller
     public function ouput(Request $request)
     {
         try {
-            $take = $request->take? $request->take : 10;
+            log($request);
+            $consulta_extra = "";
+            $take = $request->pagesize? $request->pagesize : 10;
             $skip = $request->skip? $request->skip : 0;
+            $star = $request->start;
+            $end = $request->end;
+
+            if($end && $star){
+                $consulta_extra = "AND transactionDate BETWEEN '$star' AND '$end'";
+            }else if($star){
+                $consulta_extra = "AND transactionDate >= '$star'";
+            }
             $output = InventoryTransaction::where('transactionType', 'output')
-                ->orderBy('created_at', 'desc')
-                ->skip($skip)
-                ->take($take)
-                ->get();
+            ->whereRaw("1=1 $consulta_extra")
+            ->orderBy('transactionDate', 'desc')
+            ->skip($skip)
+            ->take($take)
+            ->paginate($take);
+
             $output = InventoryTransactionResource::collection($output);
+            $paguinate = [
+                'total' => $output->total(),
+                'per_page' => $output->perPage(),
+                'current_page' => $output->currentPage(),
+                'last_page' => $output->lastPage(),
+                'next_page_url' => $output->nextPageUrl(),
+                'prev_page_url' => $output->previousPageUrl(),
+            ];
+            $output = [
+                'data' => $output,
+                'paguinate' => $paguinate
+            ];
+
             return JsonResponse::success($output, 'Lista de transacciones de salida', true, 1, 200);
         } catch (\Throwable $th) {
             log("----------Error Categoria Crear----------");
