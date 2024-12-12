@@ -15,24 +15,24 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-         Category::create([
-            'categoryName'=> 'Root',
-            'categoryDescription'=> 'Root Category',
-            'parentCategoryId' => null,
-         ]);
+        //  Category::create([
+        //     'categoryName'=> 'Root',
+        //     'categoryDescription'=> 'Root Category',
+        //     'parentCategoryId' => null,
+        //  ]);
 
          $this->call([
-            RoleSeeder::class,
-            PermissionSeeder::class,
-            CategorySeeder::class,
-            StaffSeeder::class,
-            UserSeeder::class,
-            UserRoleSeeder::class,
-            RolePermissionSeeder::class,
-            ProductSeeder::class,
-            UnitMeasurementSeeder::class,
-            ProductUnitPriceByMeasurementSeeder::class,
-            InventorySeeder::class,
+            // RoleSeeder::class,
+            // PermissionSeeder::class,
+            // CategorySeeder::class,
+            // StaffSeeder::class,
+            // UserSeeder::class,
+            // UserRoleSeeder::class,
+            // RolePermissionSeeder::class,
+            // ProductSeeder::class,
+            // UnitMeasurementSeeder::class,
+            // ProductUnitPriceByMeasurementSeeder::class,
+            // InventorySeeder::class,
             InventoryTransactionSeeder::class,
         ]);
 
