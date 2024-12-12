@@ -23,7 +23,7 @@ class InventoryTransactionSeeder extends Seeder
         //     'created_at' => Carbon::now(),
         //     'updated_at' => Carbon::now(),
         // ]);
-        InventoryTransaction::factory(41000)->create();
+        InventoryTransaction::factory(4000)->create();
          // Registrar el fin del seeder
         //  DB::table('time_seeders')->where('id', $logId)->update([
         //     'finished_at' => Carbon::now(),
