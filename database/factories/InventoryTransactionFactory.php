@@ -26,14 +26,18 @@ class InventoryTransactionFactory extends Factory
     {
 
 
-        $logId = DB::table('time_seeders')->insertGetId([
-            'seeder_name' => 'UserSeeder',
-            'started_at' => Carbon::now(),
-            'created_at' => Carbon::now(),
-            'updated_at' => Carbon::now(),
-        ]);
+        // $logId = DB::table('time_seeders')->insertGetId([
+        //     'seeder_name' => 'I03 - Pos',
+        //     'started_at' => Carbon::now(),
+        //     'created_at' => Carbon::now(),
+        //     'updated_at' => Carbon::now(),
+        // ]);
+        // $randomMinutes = rand(5, 10);
+
+
+        // $finishedAt = Carbon::now()->addMinutes($randomMinutes);
         $transactionType = $this->faker->randomElement(['input', 'output']);
-        $transactionClase = $transactionType === 'input'? 'purchase': $this->faker->randomElement(['sale', 'production']);
+        $transactionClase = $transactionType === 'input' ? 'purchase' : $this->faker->randomElement(['sale', 'production']);
 
         $result = [
             'productUnitPriceId' => ProductUnitPriceByMeasurement::inRandomOrder()->first()->unitMeasurementId,
@@ -41,16 +45,15 @@ class InventoryTransactionFactory extends Factory
             'transactionType' => $transactionType,
             'transactionClase' => $transactionClase,
             'transactionCount' => $this->faker->randomFloat(2, 1, 100),
-            // 'transactionDate' => $this->faker->dateTimeBetween('2024-01-01', '2024-11-30')->format('Y-m-d'),
-             'transactionDate' => $this->faker->dateTimeBetween('2010-01-01', '2024-05-30')->format('Y-m-d'),
+            //'transactionDate' => $this->faker->dateTimeBetween('2024-09-23', '2024-12-6')->format('Y-m-d'),
+             'transactionDate' => $this->faker->dateTimeBetween('2024-12-06', '2024-12-12')->format('Y-m-d'),
 
         ];
-         DB::table('time_seeders')->where('id', $logId)->update([
-            'finished_at' => Carbon::now(),
-            'updated_at' => Carbon::now(),
-        ]);
+        // DB::table('time_seeders')->where('id', $logId)->update([
+        //     'finished_at' => $finishedAt,
+        //     'updated_at' => Carbon::now(),
+        // ]);
 
         return $result;
-
     }
 }
